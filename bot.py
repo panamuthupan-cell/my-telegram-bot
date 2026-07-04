@@ -78,5 +78,5 @@ def add_number(message):
         bot.reply_to(message, "❌ തെറ്റായ ഫോർമാറ്റ്. /add [number] എന്ന് ഉപയോഗിക്കുക.")
 
 print("Bot started...")
-bot.infinity_polling()
+bot.polling(none_stop=True)
 
