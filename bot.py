@@ -1,24 +1,22 @@
 import telebot
 import sqlite3
 import random
+import os
 from collections import Counter
 from datetime import datetime
-import os
 
-# API TOKEN എൻവയോൺമെന്റ് വേരിയബിളിൽ നിന്ന് എടുക്കുന്നതാണ് ഏറ്റവും സുരക്ഷിതം
-API_TOKEN = os.getenv("API_TOKEN", "YOUR_API_TOKEN_HERE")
+# Environment Variable-ൽ നിന്ന് ടോക്കൺ എടുക്കുന്നു
+API_TOKEN = os.getenv("API_TOKEN")
 bot = telebot.TeleBot(API_TOKEN)
 
-# Render/Cloud പ്ലാറ്റ്‌ഫോമിൽ ഡാറ്റാബേസ് ഫയൽ ക്രാഷ് ആവാതിരിക്കാൻ 
-# persistent storage ഉള്ള ഫോൾഡറിൽ വേണം ഡാറ്റാബേസ് സേവ് ചെയ്യാൻ.
-# ഇവിടെ ലളിതമായി നിലവിലെ ഫോൾഡറിൽ തന്നെ സേവ് ചെയ്യുന്നു.
-conn = sqlite3.connect('predictions.db', check_same_thread=False)
+# Render-ൽ റൈറ്റ് ചെയ്യാൻ കഴിയുന്ന /tmp/ ഫോൾഡറിലേക്ക് ഡാറ്റാബേസ് മാറ്റുന്നു
+DB_PATH = '/tmp/predictions.db'
+conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 cursor = conn.cursor()
 cursor.execute('''CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, number INTEGER)''')
 conn.commit()
 
 def get_accurate_prediction():
-    # ഹിസ്റ്ററിയിൽ നിന്ന് ഡാറ്റ എടുക്കുന്നു
     cursor.execute("SELECT number FROM history ORDER BY id DESC LIMIT 20")
     history = [row[0] for row in cursor.fetchall()]
     
@@ -56,6 +54,19 @@ def predict_command(message):
 def add_number(message):
     try:
         parts = message.text.split()
-        if len(parts) < 2:
-            raise ValueError
         num = int(parts[1])
+        if 0 <= num <= 9:
+            cursor.execute("INSERT INTO history (number) VALUES (?)", (num,))
+            conn.commit()
+            bot.reply_to(message, f"✅ {num} സേവ് ചെയ്തു.")
+        else:
+            bot.reply_to(message, "⚠️ 0-9 നമ്പറുകൾ മാത്രം.")
+    except:
+        bot.reply_to(message, "❌ തെറ്റായ ഫോർമാറ്റ്. /add [number]")
+
+# വെബ് സെർവർ ഇല്ലാത്തതുകൊണ്ട് polling ഉപയോഗിക്കുന്നു
+print("Bot started...")
+bot.infinity_polling()
+
+
+
