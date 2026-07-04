@@ -5,11 +5,11 @@ import os
 from collections import Counter
 from datetime import datetime
 
-# Environment Variable-ൽ നിന്ന് ടോക്കൺ എടുക്കുന്നു
+# API TOKEN എൻവയോൺമെന്റ് വേരിയബിളിൽ നിന്ന് എടുക്കുക
 API_TOKEN = os.getenv("API_TOKEN")
 bot = telebot.TeleBot(API_TOKEN)
 
-# Render-ൽ റൈറ്റ് ചെയ്യാൻ കഴിയുന്ന /tmp/ ഫോൾഡറിലേക്ക് ഡാറ്റാബേസ് മാറ്റുന്നു
+# ഡാറ്റാബേസ് പാത്ത്
 DB_PATH = '/tmp/predictions.db'
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 cursor = conn.cursor()
@@ -36,11 +36,17 @@ def get_accurate_prediction():
 def predict_command(message):
     predicted_number = get_accurate_prediction()
     
-    if predicted_number == 0: color = "🔴 RED & 🟣 VIOLET"
-    elif predicted_number == 5: color = "🟢 GREEN & 🟣 VIOLET"
-    elif predicted_number in [1, 3, 7, 9]: color = "🟢 GREEN"
-    elif predicted_number in [2, 4, 6, 8]: color = "🔴 RED"
-    else: color = "🟣 VIOLET"
+    # കളർ ലോജിക് പൂർണ്ണരൂപം
+    if predicted_number == 0: 
+        color = "🔴 RED & 🟣 VIOLET"
+    elif predicted_number == 5: 
+        color = "🟢 GREEN & 🟣 VIOLET"
+    elif predicted_number in [1, 3, 7, 9]: 
+        color = "🟢 GREEN"
+    elif predicted_number in [2, 4, 6, 8]: 
+        color = "🔴 RED"
+    else: 
+        color = "🟣 VIOLET"
 
     response = (
         f"📊 **PREDICTION**\n"
@@ -61,12 +67,8 @@ def add_number(message):
             bot.reply_to(message, f"✅ {num} സേവ് ചെയ്തു.")
         else:
             bot.reply_to(message, "⚠️ 0-9 നമ്പറുകൾ മാത്രം.")
-    except:
-        bot.reply_to(message, "❌ തെറ്റായ ഫോർമാറ്റ്. /add [number]")
+    except Exception as e:
+        bot.reply_to(message, "❌ തെറ്റായ ഫോർമാറ്റ്. /add [number] എന്ന് ഉപയോഗിക്കുക.")
 
-# വെബ് സെർവർ ഇല്ലാത്തതുകൊണ്ട് polling ഉപയോഗിക്കുന്നു
 print("Bot started...")
 bot.infinity_polling()
-
-
-
