@@ -6,7 +6,7 @@ from collections import Counter
 from datetime import datetime
 
 # API TOKEN എൻവയോൺമെന്റ് വേരിയബിളിൽ നിന്ന് എടുക്കുക
-API_TOKEN = os.getenv("API_TOKEN")
+API_TOKEN = os.getenv("8630707288:AAHc9cOnOZheSU7Brs4IzbCpdL6AsOgYAYQ")
 bot = telebot.TeleBot(API_TOKEN)
 
 # ഡാറ്റാബേസ് പാത്ത്: Render-ൽ ഡാറ്റ നിലനിൽക്കാൻ പ്രോജക്റ്റ് ഫോൾഡറിൽ തന്നെ സേവ് ചെയ്യുക
