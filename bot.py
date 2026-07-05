@@ -1,70 +1,37 @@
-import telebot
-import sqlite3
+import logging
+from telegram import Update
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 import random
-import os
-from collections import Counter
-from datetime import datetime
+import time
 
-# API Token
-API_TOKEN = "8630707288:AAHc9cOnOZheSU7Brs4IzbCpdL6AsOgYAYQ"
-bot = telebot.TeleBot(API_TOKEN)
+TOKEN = "8666369696:AAES2XoCOLW8lhKE_SbY_u2MVGAkOl0yEi4"
 
-# Database setup
-DB_PATH = 'predictions.db'
-conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-cursor = conn.cursor()
-cursor.execute('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, number INTEGER)')
-conn.commit()
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
-# പിരീഡ് നമ്പറിനെ അടിസ്ഥാനമാക്കി കൃത്യമായ ഫലം നൽകുന്ന ഫങ്ഷൻ
-def get_prediction(period_number):
-    # ഒരേ പിരീഡ് നമ്പറിന് ഒരേ റിസൾട്ട് ലഭിക്കാൻ random seed ഉപയോഗിക്കുന്നു
-    random.seed(str(period_number))
+async def predict(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # നിലവിലെ സമയത്തെ അടിസ്ഥാനമാക്കി ഒരു 'സീഡ്' ഉണ്ടാക്കുന്നു. 
+    # ഇത് ചെറിയ സമയവ്യത്യാസത്തിൽ ഒരേ ഫലം നൽകാൻ സഹായിക്കും.
+    fixed_seed = int(time.time() // 10) 
+    random.seed(fixed_seed)
     
-    cursor.execute("SELECT number FROM history ORDER BY id DESC LIMIT 20")
-    history = [row[0] for row in cursor.fetchall()]
+    number = random.randint(0, 9)
     
-    if len(history) >= 5:
-        most_common = Counter(history).most_common(1)[0][0]
-        last_five_avg = sum(history[-5:]) / 5
-        # സ്ഥിരതയുള്ള റിസൾട്ടിനായി ക്രമീകരണം
-        return most_common if last_five_avg > 4 else random.randint(0, 4)
-    return random.randint(0, 9)
+    if number <= 4:
+        result_type = "Small"
+    else:
+        result_type = "Big"
+    
+    response = f"🎯 Prediction (Period based):\nNumber: {number}\nResult: {result_type}"
+    
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
-@bot.message_handler(commands=['predict'])
-def predict_command(message):
-    # ഉപയോക്താവ് പിരീഡ് നമ്പർ നൽകണം: /predict 20260704100030151
-    try:
-        parts = message.text.split()
-        if len(parts) < 2:
-            bot.reply_to(message, "⚠️ ദയവായി പിരീഡ് നമ്പർ നൽകുക.\nഉദാഹരണം: /predict 20260704100030151")
-            return
-            
-        period = parts[1]
-        predicted_number = get_prediction(period)
-        
-        # റിസൾട്ട് കളർ ലോജിക് (Syntax Error ശരിയാക്കി)
-        if predicted_number == 0: 
-            color = "🔴 RED & 🟣 VIOLET"
-        elif predicted_number == 5: 
-            color = "🟢 GREEN & 🟣 VIOLET"
-        elif predicted_number in [1, 3, 7, 9]: 
-            color = "🟢 GREEN"
-        elif predicted_number in [2, 4, 6, 8]: 
-            color = "🔴 RED"
-        else: 
-            color = "🟣 VIOLET"
-            
-        response = (f"**PREDICTION**\n"
-                    f"📊 Period: {period}\n"
-                    f"🔢 Number: {predicted_number}\n"
-                    f"🏆 Result: {color}\n"
-                    f"⌛ Time: {datetime.now().strftime('%H:%M:%S')}")
-        bot.reply_to(message, response)
-    except Exception as e:
-        bot.reply_to(message, f"❌ ഒരു പിശക് സംഭവിച്ചു: {e}")
-
-print("Bot started...")
-bot.infinity_polling()
-()
+if __name__ == '__main__':
+    application = ApplicationBuilder().token(TOKEN).build()
+    predict_handler = CommandHandler('predict', predict)
+    application.add_handler(predict_handler)
+    print("Bot is running...")
+    application.run_polling()
 
