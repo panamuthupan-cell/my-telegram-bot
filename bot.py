@@ -57,4 +57,3 @@ if __name__ == '__main__':
     
     # ബോട്ട് റൺ ചെയ്യുന്നു
     application.run_polling()
-
