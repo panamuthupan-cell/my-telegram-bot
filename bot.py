@@ -1,6 +1,6 @@
-
 import logging
 import random
+import time
 from datetime import datetime, timezone
 from telegram.ext import ApplicationBuilder, CommandHandler
 from telegram.request import HTTPXRequest
@@ -8,17 +8,14 @@ from telegram.request import HTTPXRequest
 # ലോഗിംഗ് സെറ്റപ്പ്
 logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 
+# നിങ്ങളുടെ ബോട്ട് ടോക്കൺ ഇവിടെ നൽകുക (പഴയത് Revoke ചെയ്ത ശേഷം മാത്രം)
 TOKEN = "8891642391:AAGT9kZ9MUUvi29DjrHRGju8CKLCtmuSdhA" 
-CHAT_ID = "-100XXXXXXXXXX" # നിങ്ങളുടെ ഗ്രൂപ്പ് ഐഡി ഇവിടെ നൽകുക
+CHAT_ID = "-100XXXXXXXXXX" 
 
-# ഈ OFFSET വാല്യൂ ആണ് നിങ്ങളുടെ പീരിയഡ് ശരിയാക്കേണ്ടത്.
-# ഗെയിമിലെ പീരിയഡ് - ബോട്ടിലെ പീരിയഡ് = വ്യത്യാസം. 
-# ആ വ്യത്യാസം ഇവിടെ നൽകുക. 
 PERIOD_OFFSET = 625 
 
 def get_current_period():
     now = datetime.now(timezone.utc)
-    # ഗെയിമിന്റെ ഫോർമാറ്റ് അനുസരിച്ച് പീരിയഡ് കണക്കാക്കുന്നു
     base_period = int(now.strftime("%Y%m%d100010000"))
     minutes = now.hour * 60 + now.minute
     return base_period + minutes - PERIOD_OFFSET
@@ -30,12 +27,26 @@ def get_prediction(period):
     return number, result
 
 async def predict_command(update, context):
-    period = get_current_period()
-    num, res = get_prediction(period)
-    await update.message.reply_text(f"🎯 Period: {period}\n🎯 Number: {num}\n🎯 Result: {res}")
+    try:
+        period = get_current_period()
+        num, res = get_prediction(period)
+        await update.message.reply_text(f"🎯 Period: {period}\n🎯 Number: {num}\n🎯 Result: {res}")
+    except Exception as e:
+        logging.error(f"Error in predict_command: {e}")
 
 if __name__ == '__main__':
-    application = ApplicationBuilder().token(TOKEN).request(HTTPXRequest(connect_timeout=60.0)).build()
+    # HTTPXRequest ഉപയോഗിച്ച് ടൈംഔട്ട് സെറ്റ് ചെയ്യുന്നു
+    request = HTTPXRequest(connect_timeout=60.0, read_timeout=60.0)
+    application = ApplicationBuilder().token(TOKEN).request(request).build()
+    
     application.add_handler(CommandHandler("predict", predict_command))
+    
     print("Bot Running...")
-    application.run_polling()
+    
+    # ബോട്ട് ക്രാഷ് ആയാലും വീണ്ടും റൺ ചെയ്യാൻ ഒരു ലൂപ്പ്
+    while True:
+        try:
+            application.run_polling()
+        except Exception as e:
+            logging.error(f"Bot Crashed: {e}. Restarting in 5 seconds...")
+            time.sleep(5) # 5 സെക്കൻഡിന് ശേഷം റീസ്റ്റാർട്ട് ചെയ്യും
