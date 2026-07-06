@@ -1,30 +1,23 @@
 import logging
 import random
-import threading
 from datetime import datetime, timezone
-from flask import Flask
 from telegram.ext import ApplicationBuilder, CommandHandler
 from telegram.request import HTTPXRequest
 
 # ലോഗിംഗ് സെറ്റപ്പ്
 logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 
-# ടോക്കൺ
 TOKEN = "8891642391:AAGT9kZ9MUUvi29DjrHRGju8CKLCtmuSdhA" 
+CHAT_ID = "-100XXXXXXXXXX" # നിങ്ങളുടെ ഗ്രൂപ്പ് ഐഡി ഇവിടെ നൽകുക
+
+# ഈ OFFSET വാല്യൂ ആണ് നിങ്ങളുടെ പീരിയഡ് ശരിയാക്കേണ്ടത്.
+# ഗെയിമിലെ പീരിയഡ് - ബോട്ടിലെ പീരിയഡ് = വ്യത്യാസം. 
+# ആ വ്യത്യാസം ഇവിടെ നൽകുക. 
 PERIOD_OFFSET = 625 
-
-# Flask സെർവർ സെറ്റപ്പ്
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot is alive!"
-
-def run_web_server():
-    app.run(host='0.0.0.0', port=8080)
 
 def get_current_period():
     now = datetime.now(timezone.utc)
+    # ഗെയിമിന്റെ ഫോർമാറ്റ് അനുസരിച്ച് പീരിയഡ് കണക്കാക്കുന്നു
     base_period = int(now.strftime("%Y%m%d100010000"))
     minutes = now.hour * 60 + now.minute
     return base_period + minutes - PERIOD_OFFSET
@@ -36,24 +29,12 @@ def get_prediction(period):
     return number, result
 
 async def predict_command(update, context):
-    try:
-        period = get_current_period()
-        num, res = get_prediction(period)
-        await update.message.reply_text(f"🎯 Period: {period}\n🎯 Number: {num}\n🎯 Result: {res}")
-    except Exception as e:
-        logging.error(f"Error in predict_command: {e}")
+    period = get_current_period()
+    num, res = get_prediction(period)
+    await update.message.reply_text(f"🎯 Period: {period}\n🎯 Number: {num}\n🎯 Result: {res}")
 
 if __name__ == '__main__':
-    # Flask വെബ് സെർവർ സ്റ്റാർട്ട് ചെയ്യുന്നു
-    threading.Thread(target=run_web_server, daemon=True).start()
-    
-    # Telegram ബോട്ട് സെറ്റപ്പ്
-    request = HTTPXRequest(connect_timeout=60.0, read_timeout=60.0)
-    application = ApplicationBuilder().token(TOKEN).request(request).build()
-    
+    application = ApplicationBuilder().token(TOKEN).request(HTTPXRequest(connect_timeout=60.0)).build()
     application.add_handler(CommandHandler("predict", predict_command))
-    
-    print("Bot and Web Server Running...")
-    
-    # ബോട്ട് റൺ ചെയ്യുന്നു
+    print("Bot Running...")
     application.run_polling()
