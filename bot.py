@@ -1,18 +1,29 @@
 import logging
 import random
 import time
+import threading
+import asyncio
 from datetime import datetime, timezone
+from flask import Flask
 from telegram.ext import ApplicationBuilder, CommandHandler
 from telegram.request import HTTPXRequest
 
 # ലോഗിംഗ് സെറ്റപ്പ്
 logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 
-# നിങ്ങളുടെ ബോട്ട് ടോക്കൺ ഇവിടെ നൽകുക (പഴയത് Revoke ചെയ്ത ശേഷം മാത്രം)
+# ടോക്കൺ
 TOKEN = "8891642391:AAGT9kZ9MUUvi29DjrHRGju8CKLCtmuSdhA" 
-CHAT_ID = "-100XXXXXXXXXX" 
-
 PERIOD_OFFSET = 625 
+
+# Flask സെർവർ സെറ്റപ്പ്
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is alive!"
+
+def run_web_server():
+    app.run(host='0.0.0.0', port=8080)
 
 def get_current_period():
     now = datetime.now(timezone.utc)
@@ -35,18 +46,19 @@ async def predict_command(update, context):
         logging.error(f"Error in predict_command: {e}")
 
 if __name__ == '__main__':
-    # HTTPXRequest ഉപയോഗിച്ച് ടൈംഔട്ട് സെറ്റ് ചെയ്യുന്നു
+    # Flask വെബ് സെർവർ ഒരു ത്രെഡ് ആയി റൺ ചെയ്യുന്നു (daemon=True - ബോട്ട് ഓഫാകുമ്പോൾ ഇതും ഓഫ് ആകും)
+    threading.Thread(target=run_web_server, daemon=True).start()
+    
+    # Telegram ബോട്ട് സെറ്റപ്പ്
     request = HTTPXRequest(connect_timeout=60.0, read_timeout=60.0)
     application = ApplicationBuilder().token(TOKEN).request(request).build()
     
     application.add_handler(CommandHandler("predict", predict_command))
     
-    print("Bot Running...")
+    print("Bot and Web Server Running...")
     
-    # ബോട്ട് ക്രാഷ് ആയാലും വീണ്ടും റൺ ചെയ്യാൻ ഒരു ലൂപ്പ്
-    while True:
-        try:
-            application.run_polling()
-        except Exception as e:
-            logging.error(f"Bot Crashed: {e}. Restarting in 5 seconds...")
-            time.sleep(5) # 5 സെക്കൻഡിന് ശേഷം റീസ്റ്റാർട്ട് ചെയ്യും
+    # ലൂപ്പ് ഒഴിവാക്കി നേരിട്ട് റൺ ചെയ്യുന്നു
+    # python-telegram-bot-ന്റെ പുതിയ പതിപ്പുകളിൽ run_polling() 
+    # തനിയെ ക്രാഷുകൾ ഹാൻഡിൽ ചെയ്യാൻ കഴിവുള്ളതാണ്.
+    application.run_polling()
+
