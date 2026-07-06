@@ -1,8 +1,7 @@
+
 import logging
 import random
-import time
 import threading
-import asyncio
 from datetime import datetime, timezone
 from flask import Flask
 from telegram.ext import ApplicationBuilder, CommandHandler
@@ -46,7 +45,7 @@ async def predict_command(update, context):
         logging.error(f"Error in predict_command: {e}")
 
 if __name__ == '__main__':
-    # Flask വെബ് സെർവർ ഒരു ത്രെഡ് ആയി റൺ ചെയ്യുന്നു (daemon=True - ബോട്ട് ഓഫാകുമ്പോൾ ഇതും ഓഫ് ആകും)
+    # Flask വെബ് സെർവർ സ്റ്റാർട്ട് ചെയ്യുന്നു
     threading.Thread(target=run_web_server, daemon=True).start()
     
     # Telegram ബോട്ട് സെറ്റപ്പ്
@@ -57,8 +56,6 @@ if __name__ == '__main__':
     
     print("Bot and Web Server Running...")
     
-    # ലൂപ്പ് ഒഴിവാക്കി നേരിട്ട് റൺ ചെയ്യുന്നു
-    # python-telegram-bot-ന്റെ പുതിയ പതിപ്പുകളിൽ run_polling() 
-    # തനിയെ ക്രാഷുകൾ ഹാൻഡിൽ ചെയ്യാൻ കഴിവുള്ളതാണ്.
+    # ബോട്ട് റൺ ചെയ്യുന്നു
     application.run_polling()
 
