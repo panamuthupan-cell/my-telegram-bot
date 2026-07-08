@@ -1,6 +1,8 @@
+
 import logging
 import random
 import threading
+import os
 from flask import Flask
 from datetime import datetime, timezone
 from telegram.ext import ApplicationBuilder, CommandHandler
@@ -18,9 +20,11 @@ def home():
     return "Bot is running!"
 
 def run_flask():
-    app.run(host='0.0.0.0', port=10000)
+    # Render നൽകുന്ന PORT ഉപയോഗിക്കുന്നു, അല്ലെങ്കിൽ ഡിഫോൾട്ട് 10000
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
 
-# പീരിയഡ് കണക്കാക്കുന്ന ഫംഗ്ഷൻ (നിലവിലുള്ളത്)
+# പീരിയഡ് കണക്കാക്കുന്ന ഫംഗ്ഷൻ
 PERIOD_OFFSET = 625 
 def get_current_period():
     now = datetime.now(timezone.utc)
