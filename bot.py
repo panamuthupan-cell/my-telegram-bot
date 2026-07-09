@@ -10,7 +10,7 @@ from telegram.request import HTTPXRequest
 # ലോഗിംഗ് സെറ്റപ്പ്
 logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 
-TOKEN = "8891642391:AAGT9kZ9MUUvi29DjrHRGju8CKLCtmuSdhA" 
+TOKEN = "8891642391:AAGtNQ80s-ByvoOTcHJzwPVx5WHuqUfWmyY" 
 
 # Flask ആപ്പ് സെറ്റപ്പ്
 app = Flask(__name__)
