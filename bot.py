@@ -1,40 +1,66 @@
-import logging
-import random
-from datetime import datetime, timezone
-from telegram.ext import ApplicationBuilder, CommandHandler
-from telegram.request import HTTPXRequest
-
-# ലോഗിംഗ് സെറ്റപ്പ്
-logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
-
-TOKEN = "8840025520:AAFpIqVpCrPS6oVcB-jJ0PWVSWlU0zW_Jm8" 
-CHAT_ID = "-100XXXXXXXXXX" # നിങ്ങളുടെ ഗ്രൂപ്പ് ഐഡി ഇവിടെ നൽകുക
-
-# ഈ OFFSET വാല്യൂ ആണ് നിങ്ങളുടെ പീരിയഡ് ശരിയാക്കേണ്ടത്.
-# ഗെയിമിലെ പീരിയഡ് - ബോട്ടിലെ പീരിയഡ് = വ്യത്യാസം. 
-# ആ വ്യത്യാസം ഇവിടെ നൽകുക. 
-PERIOD_OFFSET = 625 
-
-def get_current_period():
-    now = datetime.now(timezone.utc)
-    # ഗെയിമിന്റെ ഫോർമാറ്റ് അനുസരിച്ച് പീരിയഡ് കണക്കാക്കുന്നു
-    base_period = int(now.strftime("%Y%m%d100010000"))
-    minutes = now.hour * 60 + now.minute
-    return base_period + minutes - PERIOD_OFFSET
-
-def get_prediction(period):
-    random.seed(period)
-    number = random.randint(0, 9)
-    result = "Small" if number <= 4 else "Big"
-    return number, result
-
-async def predict_command(update, context):
-    period = get_current_period()
-    num, res = get_prediction(period)
-    await update.message.reply_text(f"🎯 Period: {period}\n🎯 Number: {num}\n🎯 Result: {res}")
-
-if __name__ == '__main__':
-    application = ApplicationBuilder().token(TOKEN).request(HTTPXRequest(connect_timeout=60.0)).build()
-    application.add_handler(CommandHandler("predict", predict_command))
-    print("Bot Running...")
-    application.run_polling()
+def RGB2HEX(color): 
+return "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2])) 
+ 
+def get_image(image_path): 
+image = cv2.imread(image_path) 
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) 
+return image 
+ 
+IMAGE_DIRECTORY = 'C:/Users/Dell/Desktop/CPS 02' 
+COLORS = { 
+    'GREEN': [0, 128, 0], 
+    'BLUE': [0, 0, 128], 
+    'YELLOW': [255, 255, 0] 
+} 
+images = [] 
+ 
+for file in os.listdir(IMAGE_DIRECTORY): 
+    if not file.startswith('.'): 
+        images.append(get_image(os.path.join(IMAGE_DIRECTORY, file))) 
+ 
+# extracting colors from image  
+def get_colors(images, number_of_colors, show_char = True): 
+for j in range(len(images)): 
+    modified_image = cv2.resize(images[j], (600, 400), interpolation = cv2.INTER_AREA) 
+    modified_image = modified_image.reshape(modified_image.shape[0]*modified_image.shape[1],1) 
+ 
+    clf = KMeans(n_clusters = number_of_colors) 
+    labels = clf.fit_predict(modified_image) 
+ 
+    counts = Counter(labels) 
+ 
+    center_colors = clf.cluster_centers_ 
+    # We get ordered colors by iterating through the keys 
+    ordered_colors = [center_colors[i] for i in counts.keys()] 
+    hex_colors = [RGB2HEX(ordered_colors[i]) for i in counts.keys()] 
+    rgb_colors = [ordered_colors[i] for i in counts.keys()] 
+ 
+# matching an image by its color 
+def match_image_by_color(image, color, threshold = 60, number_of_colors = 10):  
+ 
+image_colors = get_colors(image, number_of_colors, False) 
+selected_color = rgb2lab(np.uint8(np.asarray([[color]]))) 
+ 
+select_image = False 
+for i in range(number_of_colors): 
+    curr_color = rgb2lab(np.uint8(np.asarray([[image_colors[i]]]))) 
+    diff = deltaE_cie76(selected_color, curr_color) 
+    if (diff < threshold): 
+        select_image = True 
+ 
+return select_image 
+ 
+# Selecting an image 
+def show_selected_images(images, color, threshold, colors_to_match): 
+index = 1 
+ 
+for i in range(len(images)): 
+    selected = match_image_by_color(images[i], color, threshold, colors_to_match) 
+    if (selected): 
+        plt.subplot(1, 5, index) 
+        plt.imshow(images[i]) 
+        index += 1 
+ 
+# printing the result  
+plt.figure(figsize = (20, 10)) 
+show_selected_images(images, COLORS['BLUE'], 60, 5)
