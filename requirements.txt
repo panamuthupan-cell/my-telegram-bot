@@ -1,3 +1,9 @@
+
 python-telegram-bot
 flask
 httpx
+opencv-python-headless
+matplotlib
+numpy
+scikit-learn
+scikit-image
