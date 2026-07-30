@@ -1,10 +1,32 @@
 from collections import Counter
 import os
+from threading import Thread
 import cv2
+from flask import Flask
 from skimage.color import deltaE_cie76, rgb2lab
+import matplotlib
+
+matplotlib.use("Agg")  # GUI ഇല്ലാത്ത സർവറുകളിൽ പ്ലോട്ട് വർക്ക് ചെയ്യാൻ
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
+
+# 1. Render-നായി ചെറിയ ഒരു ഡമ്മി വെബ് സർവർ (പോർട്ട് എയ്ഡ് ചെയ്യാൻ)
+app = Flask(__name__)
+
+
+@app.route("/")
+def home():
+  return "Bot is running!"
+
+
+def run_web():
+  port = int(os.environ.get("PORT", 5000))
+  app.run(host="0.0.0.0", port=port)
+
+
+# ബാക്ക്ഗ്രൗണ്ടിൽ വെബ് സർവർ സ്റ്റാർട്ട് ചെയ്യുന്നു
+Thread(target=run_web).start()
 
 
 # RGB മുതൽ HEX വരെയുള്ള മാറ്റം
@@ -21,7 +43,8 @@ def get_image(image_path):
   return image
 
 
-IMAGE_DIRECTORY = "C:/Users/Dell/Desktop/CPS 02"
+# 2. Render-ൽ ഉള്ള ഫോൾഡർ പാത്ത് (ഇല്ലെങ്കിൽ നിലവിലുള്ള ഫോൾഡർ നൽകുക)
+IMAGE_DIRECTORY = "./images"  # അല്ലെങ്കിൽ നിങ്ങളുടെ പ്രൊജക്റ്റിലെ ഇമേജ് ഫോൾഡർ പാത്ത്
 COLORS = {"GREEN": [0, 128, 0], "BLUE": [0, 0, 128], "YELLOW": [255, 255, 0]}
 images = []
 
@@ -35,7 +58,7 @@ if os.path.exists(IMAGE_DIRECTORY):
         images.append(img)
 
 
-# ചിത്രങ്ങളിൽ നിന്ന് നിറങ്ങൾ വേർതിരിക്കുന്നു (Error corrected here)
+# ചിത്രങ്ങളിൽ നിന്ന് നിറങ്ങൾ വേർതിരിക്കുന്നു
 def get_colors(image, number_of_colors, show_char=True):
   modified_image = cv2.resize(image, (600, 400), interpolation=cv2.INTER_AREA)
   modified_image = modified_image.reshape(
@@ -48,7 +71,6 @@ def get_colors(image, number_of_colors, show_char=True):
   counts = Counter(labels)
   center_colors = clf.cluster_centers_
 
-  # ഏറ്റവും കൂടുതൽ കാണപ്പെടുന്ന നിറങ്ങളുടെ ക്രമത്തിൽ സോർട്ട് ചെയ്യുന്നു
   ordered_colors = [center_colors[i] for i in counts.keys()]
   rgb_colors = [ordered_colors[i] for i in counts.keys()]
 
@@ -58,8 +80,6 @@ def get_colors(image, number_of_colors, show_char=True):
 # നിറം അനുസരിച്ച് ചിത്രം മാച്ച് ചെയ്യുന്നു
 def match_image_by_color(image, color, threshold=60, number_of_colors=10):
   image_colors = get_colors(image, number_of_colors, False)
-
-  # Lab കളർ സ്പേസിലേക്ക് മാറ്റുമ്പോൾ 2D array ആയി നൽകുന്നു
   selected_color = rgb2lab(np.uint8(np.asarray([[color]])))
 
   select_image = False
@@ -73,24 +93,30 @@ def match_image_by_color(image, color, threshold=60, number_of_colors=10):
   return select_image
 
 
-# തിരഞ്ഞെടുത്ത ചിത്രങ്ങൾ കാണിക്കുന്നു
-def show_selected_images(images, color, threshold, colors_to_match):
+# തിരഞ്ഞെടുത്ത ചിത്രങ്ങൾ സേവ് ചെയ്യുന്നു (സെർവറിൽ plt.show() വർക്ക് ആകില്ല)
+def save_selected_images(images, color, threshold, colors_to_match):
   index = 1
   for i in range(len(images)):
     selected = match_image_by_color(images[i], color, threshold, colors_to_match)
-    if selected and index <= 5:  # Subplot പരിധി കവിയാതിരിക്കാൻ
+    if selected and index <= 5:
       plt.subplot(1, 5, index)
       plt.imshow(images[i])
       plt.axis("off")
       index += 1
+  if index > 1:
+    plt.savefig("output.png")  # ചിത്രങ്ങൾ ഫയലായി സേവ് ചെയ്യുന്നു
+    print("Matched images saved to output.png")
 
 
-# ഫലം പ്രിന്റ് ചെയ്യുന്നു / പ്ലോട്ട് ചെയ്യുന്നു
+# പ്രോസസ്സിംഗ്
 if len(images) > 0:
   plt.figure(figsize=(20, 10))
-  show_selected_images(images, COLORS["BLUE"], 60, 5)
-  plt.show()
+  save_selected_images(images, COLORS["BLUE"], 60, 5)
 else:
-  print("ചിത്രങ്ങളൊന്നും gefunden ചെയ്തില്ല അല്ലെങ്കിൽ ഡയറക്ടറി തെറ്റാണ്.")
- 
-    
+  print("ചിത്രങ്ങളൊന്നും കണ്ടെത്തിയില്ല.")
+
+# ആപ്പ് പെട്ടെന്ന് ക്ലോസ് ആയി പോകാതിരിക്കാൻ ലൂപ്പ് നിലനിർത്തുന്നു
+import time
+
+while True:
+  time.sleep(1)
