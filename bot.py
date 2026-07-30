@@ -31,7 +31,7 @@ def run_web():
 Thread(target=run_web).start()
 
 # 2. ടെലിഗ്രാം ബോട്ട് സെറ്റപ്പ്
-TOKEN = "8660064955:AAEPwaRQTO83zaCyswkmzjMMam6tDYpghlY"
+TOKEN = "8660064955:AAH0nZOb2eqbfJJIGT83kbnnN9Yg5qAsTZCs"
 bot = telebot.TeleBot(TOKEN)
 
 IMAGE_DIRECTORY = "."  # ഗിത്ഹബ് മെയിൻ ഫോൾഡറിൽ നിന്ന് ചിത്രങ്ങൾ എടുക്കാൻ
@@ -100,7 +100,7 @@ def save_selected_images(images, color, threshold, colors_to_match):
   if index > 1:
     plt.savefig("output.png")
     return True
-  return False  # <--- ഈ ലൈൻ വിട്ടുപോയിരുന്നു, അത് ഇവിടെ ചേർത്തിട്ടുണ്ട്
+  return False
 
 
 # 3. ടെലിഗ്രാം കമാൻഡ് ഹാൻഡ്‌ലർ
@@ -140,14 +140,16 @@ def send_predict(message):
     )
 
 
-# 4. ബോട്ട് ബാക്ക്ഗ്രൗണ്ടിൽ റൺ ചെയ്യാൻ ത്രെഡ് ഉപയോഗിക്കുന്നു
+# 4. ബോട്ട് ബാക്ക്ഗ്രൗണ്ടിൽ റൺ ചെയ്യാൻ ത്രെഡ് ഉപയോഗിക്കുന്നു (എറർ വരാത്ത രീതിയിൽ അപ്ഡേറ്റ് ചെയ്തു)
 def run_bot():
   while True:
     try:
-      bot.infinity_polling(timeout=60, long_polling_timeout=60)
+      bot.infinity_polling(
+          timeout=30, interval=0, long_polling_timeout=30, skip_pending=True
+      )
     except Exception as e:
-      print(f"Error: {e}")
-      time.sleep(5)
+      print(f"Polling Error: {e}")
+      time.sleep(3)
 
 
 Thread(target=run_bot).start()
@@ -155,3 +157,5 @@ Thread(target=run_bot).start()
 # ആപ്പ് ലൈവായി നിലനിർത്താൻ
 while True:
   time.sleep(1)
+
+  
