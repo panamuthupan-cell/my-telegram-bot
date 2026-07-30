@@ -31,7 +31,7 @@ def run_web():
 Thread(target=run_web).start()
 
 # 2. ടെലിഗ്രാം ബോട്ട് സെറ്റപ്പ്
-TOKEN = "8660064955:AAEPwaRQTO83zaCyswkmzjMMam6tDYpghlY"
+TOKEN = "8660064955:AAH0nZOb2eqbfJJIGT83kbnnN9Yg5qAsTZCs"
 bot = telebot.TeleBot(TOKEN)
 
 IMAGE_DIRECTORY = "."  # ഗിത്ഹബ് മെയിൻ ഫോൾഡറിൽ നിന്ന് ചിത്രങ്ങൾ എടുക്കാൻ
@@ -111,8 +111,13 @@ def send_predict(message):
   images = []
   if os.path.exists(IMAGE_DIRECTORY):
     for file in os.listdir(IMAGE_DIRECTORY):
-      # ചിത്രങ്ങൾ മാത്രം എടുക്കാനായി എക്സ്റ്റൻഷൻ പരിശോധിക്കുന്നു
-      if file.lower().endswith((".png", ".jpg", ".jpeg")):
+      # കോഡും മറ്റ് ഫയലുകളും ഒഴിവാക്കി മെയിൻ ഫോൾഡറിലെ എല്ലാ ചിത്രങ്ങളും എടുക്കുന്നു
+      if not file.startswith(".") and file not in [
+          "bot.py",
+          "requirements.txt",
+          "README.md",
+          "images",
+      ]:
         img_path = os.path.join(IMAGE_DIRECTORY, file)
         img = get_image(img_path)
         if img is not None:
