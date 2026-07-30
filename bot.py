@@ -31,7 +31,7 @@ def run_web():
 Thread(target=run_web).start()
 
 # 2. ടെലിഗ്രാം ബോട്ട് സെറ്റപ്പ്
-TOKEN = "8660064955:AAH0nZOb2eqbfJJIGT83kbnnN9Yg5qAsTZCs"
+TOKEN = "8660064955:AAEPwaRQTO83zaCyswkmzjMMam6tDYpghlY"
 bot = telebot.TeleBot(TOKEN)
 
 IMAGE_DIRECTORY = "."  # ഗിത്ഹബ് മെയിൻ ഫോൾഡറിൽ നിന്ന് ചിത്രങ്ങൾ എടുക്കാൻ
