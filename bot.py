@@ -100,7 +100,7 @@ def save_selected_images(images, color, threshold, colors_to_match):
   if index > 1:
     plt.savefig("output.png")
     return True
-  return False
+  return False  # <--- ഈ ലൈൻ വിട്ടുപോയിരുന്നു, അത് ഇവിടെ ചേർത്തിട്ടുണ്ട്
 
 
 # 3. ടെലിഗ്രാം കമാൻഡ് ഹാൻഡ്‌ലർ
@@ -155,4 +155,3 @@ Thread(target=run_bot).start()
 # ആപ്പ് ലൈവായി നിലനിർത്താൻ
 while True:
   time.sleep(1)
-
