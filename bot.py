@@ -31,11 +31,10 @@ def run_web():
 Thread(target=run_web).start()
 
 # 2. ടെലിഗ്രാം ബോട്ട് സെറ്റപ്പ്
-# (നിങ്ങളുടെ ബോട്ട് ടോക്കൻ ഇവിടെ നൽകുക അല്ലെങ്കിൽ Render-ൽ Environment Variable ആയി നൽകുക)
-TOKEN = os.environ.get("BOT_TOKEN","8660064955:AAHOnZOb2eqbfJJIGT83kbnN9Yg5qAsTZCs")
+TOKEN = "8660064955:AAH0nZOb2eqbfJJIGT83kbnnN9Yg5qAsTZCs"
 bot = telebot.TeleBot(TOKEN)
 
-IMAGE_DIRECTORY = "./images"  # ചിത്രങ്ങൾ ഉള്ള ഫോൾഡർ
+IMAGE_DIRECTORY = "."  # ഗിത്ഹബ് മെയിൻ ഫോൾഡറിൽ നിന്ന് ചിത്രങ്ങൾ എടുക്കാൻ
 COLORS = {"GREEN": [0, 128, 0], "BLUE": [0, 0, 128], "YELLOW": [255, 255, 0]}
 
 
@@ -112,7 +111,8 @@ def send_predict(message):
   images = []
   if os.path.exists(IMAGE_DIRECTORY):
     for file in os.listdir(IMAGE_DIRECTORY):
-      if not file.startswith("."):
+      # ചിത്രങ്ങൾ മാത്രം എടുക്കാനായി എക്സ്റ്റൻഷൻ പരിശോധിക്കുന്നു
+      if file.lower().endswith((".png", ".jpg", ".jpeg")):
         img_path = os.path.join(IMAGE_DIRECTORY, file)
         img = get_image(img_path)
         if img is not None:
@@ -128,11 +128,11 @@ def send_predict(message):
         bot.send_photo(message.chat.id, photo, caption="മാച്ച് ചെയ്ത ചിത്രങ്ങൾ!")
     else:
       bot.reply_to(
-        message, "മാച്ച് ചെയ്യുന്ന കളറിലുള്ള ചിത്രങ്ങളൊന്നും കണ്ടെത്തിയില്ല."
+          message, "മാച്ച് ചെയ്യുന്ന കളറിലുള്ള ചിത്രങ്ങളൊന്നും കണ്ടെത്തിയില്ല."
       )
   else:
     bot.reply_to(
-      message, "ഫോൾഡറിൽ ചിത്രങ്ങളൊന്നും ലഭ്യമല്ല അല്ലെങ്കിൽ പാത്ത് തെറ്റാണ്."
+        message, "ഫോൾഡറിൽ ചിത്രങ്ങളൊന്നും ലഭ്യമല്ല അല്ലെങ്കിൽ പാത്ത് തെറ്റാണ്."
     )
 
 
