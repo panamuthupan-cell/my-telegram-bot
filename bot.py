@@ -34,7 +34,7 @@ Thread(target=run_web).start()
 TOKEN = "8660064955:AAH0nZOb2eqbfJJIGT83kbnnN9Yg5qAsTZCs"
 bot = telebot.TeleBot(TOKEN)
 
-IMAGE_DIRECTORY = "."  # ഗിത്ഹബ് മെയിൻ ഫോൾഡറിൽ നിന്ന് ചിത്രങ്ങൾ എടുക്കാൻ
+IMAGE_DIRECTORY = "images"  # ചിത്രങ്ങൾ ഇട്ടിരിക്കുന്ന 'images' ഫോൾഡർ പാത്ത് നൽകി
 COLORS = {"GREEN": [0, 128, 0], "BLUE": [0, 0, 128], "YELLOW": [255, 255, 0]}
 
 
@@ -111,12 +111,7 @@ def send_predict(message):
   images = []
   if os.path.exists(IMAGE_DIRECTORY):
     for file in os.listdir(IMAGE_DIRECTORY):
-      if not file.startswith(".") and file not in [
-          "bot.py",
-          "requirements.txt",
-          "README.md",
-          "images",
-      ]:
+      if not file.startswith("."):
         img_path = os.path.join(IMAGE_DIRECTORY, file)
         img = get_image(img_path)
         if img is not None:
@@ -140,7 +135,7 @@ def send_predict(message):
     )
 
 
-# 4. ബോട്ട് ബാക്ക്ഗ്രൗണ്ടിൽ റൺ ചെയ്യാൻ ത്രെഡ് ഉപയോഗിക്കുന്നു (എറർ വരാത്ത രീതിയിൽ അപ്ഡേറ്റ് ചെയ്തു)
+# 4. ബോട്ട് ബാക്ക്ഗ്രൗണ്ടിൽ റൺ ചെയ്യാൻ ത്രെഡ് ഉപയോഗിക്കുന്നു
 def run_bot():
   while True:
     try:
@@ -157,5 +152,6 @@ Thread(target=run_bot).start()
 # ആപ്പ് ലൈവായി നിലനിർത്താൻ
 while True:
   time.sleep(1)
+
 
   
