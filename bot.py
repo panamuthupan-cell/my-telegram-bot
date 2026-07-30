@@ -1,17 +1,19 @@
 from collections import Counter
 import os
 from threading import Thread
+import time
 import cv2
 from flask import Flask
 from skimage.color import deltaE_cie76, rgb2lab
 import matplotlib
+import telebot
 
-matplotlib.use("Agg")  # GUI ഇല്ലാത്ത സർവറുകളിൽ പ്ലോട്ട് വർക്ക് ചെയ്യാൻ
+matplotlib.use("Agg")  # സർവറിൽ പ്ലോട്ട് വർക്ക് ചെയ്യാൻ
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
 
-# 1. Render-നായി ചെറിയ ഒരു ഡമ്മി വെബ് സർവർ (പോർട്ട് എയ്ഡ് ചെയ്യാൻ)
+# 1. Render-നായി ചെറിയ ഒരു ഡമ്മി വെബ് സർവർ (പോർട്ട് ബൈൻഡ് ചെയ്യാൻ)
 app = Flask(__name__)
 
 
@@ -25,8 +27,16 @@ def run_web():
   app.run(host="0.0.0.0", port=port)
 
 
-# ബാക്ക്ഗ്രൗണ്ടിൽ വെബ് സർവർ സ്റ്റാർട്ട് ചെയ്യുന്നു
+# വെബ് സർവർ ബാക്ക്ഗ്രൗണ്ടിൽ സ്റ്റാർട്ട് ചെയ്യുന്നു
 Thread(target=run_web).start()
+
+# 2. ടെലിഗ്രാം ബോട്ട് സെറ്റപ്പ്
+# (നിങ്ങളുടെ ബോട്ട് ടോക്കൻ ഇവിടെ നൽകുക അല്ലെങ്കിൽ Render-ൽ Environment Variable ആയി നൽകുക)
+TOKEN = os.environ.get("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+bot = telebot.TeleBot(TOKEN)
+
+IMAGE_DIRECTORY = "./images"  # ചിത്രങ്ങൾ ഉള്ള ഫോൾഡർ
+COLORS = {"GREEN": [0, 128, 0], "BLUE": [0, 0, 128], "YELLOW": [255, 255, 0]}
 
 
 # RGB മുതൽ HEX വരെയുള്ള മാറ്റം
@@ -41,21 +51,6 @@ def get_image(image_path):
   if image is not None:
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
   return image
-
-
-# 2. Render-ൽ ഉള്ള ഫോൾഡർ പാത്ത് (ഇല്ലെങ്കിൽ നിലവിലുള്ള ഫോൾഡർ നൽകുക)
-IMAGE_DIRECTORY = "./images"  # അല്ലെങ്കിൽ നിങ്ങളുടെ പ്രൊജക്റ്റിലെ ഇമേജ് ഫോൾഡർ പാത്ത്
-COLORS = {"GREEN": [0, 128, 0], "BLUE": [0, 0, 128], "YELLOW": [255, 255, 0]}
-images = []
-
-# ഡയറക്ടറിയിൽ നിന്ന് ചിത്രങ്ങൾ എടുക്കുന്നു
-if os.path.exists(IMAGE_DIRECTORY):
-  for file in os.listdir(IMAGE_DIRECTORY):
-    if not file.startswith("."):
-      img_path = os.path.join(IMAGE_DIRECTORY, file)
-      img = get_image(img_path)
-      if img is not None:
-        images.append(img)
 
 
 # ചിത്രങ്ങളിൽ നിന്ന് നിറങ്ങൾ വേർതിരിക്കുന്നു
@@ -93,7 +88,7 @@ def match_image_by_color(image, color, threshold=60, number_of_colors=10):
   return select_image
 
 
-# തിരഞ്ഞെടുത്ത ചിത്രങ്ങൾ സേവ് ചെയ്യുന്നു (സെർവറിൽ plt.show() വർക്ക് ആകില്ല)
+# തിരഞ്ഞെടുത്ത ചിത്രങ്ങൾ സേവ് ചെയ്യുന്നു
 def save_selected_images(images, color, threshold, colors_to_match):
   index = 1
   for i in range(len(images)):
@@ -104,19 +99,55 @@ def save_selected_images(images, color, threshold, colors_to_match):
       plt.axis("off")
       index += 1
   if index > 1:
-    plt.savefig("output.png")  # ചിത്രങ്ങൾ ഫയലായി സേവ് ചെയ്യുന്നു
-    print("Matched images saved to output.png")
+    plt.savefig("output.png")
+    return True
+  return False
 
 
-# പ്രോസസ്സിംഗ്
-if len(images) > 0:
-  plt.figure(figsize=(20, 10))
-  save_selected_images(images, COLORS["BLUE"], 60, 5)
-else:
-  print("ചിത്രങ്ങളൊന്നും കണ്ടെത്തിയില്ല.")
+# 3. ടെലിഗ്രാം കമാൻഡ് ഹാൻഡ്‌ലർ
+@bot.message_handler(commands=["predict"])
+def send_predict(message):
+  bot.reply_to(message, "ചിത്രങ്ങൾ പരിശോധിക്കുന്നു, ദയവായി കാത്തിരിക്കുക...")
 
-# ആപ്പ് പെട്ടെന്ന് ക്ലോസ് ആയി പോകാതിരിക്കാൻ ലൂപ്പ് നിലനിർത്തുന്നു
-import time
+  images = []
+  if os.path.exists(IMAGE_DIRECTORY):
+    for file in os.listdir(IMAGE_DIRECTORY):
+      if not file.startswith("."):
+        img_path = os.path.join(IMAGE_DIRECTORY, file)
+        img = get_image(img_path)
+        if img is not None:
+          images.append(img)
 
+  if len(images) > 0:
+    plt.figure(figsize=(20, 10))
+    success = save_selected_images(images, COLORS["BLUE"], 60, 5)
+    plt.close()  # മെമ്മറി ക്ലിയർ ചെയ്യാൻ
+
+    if success and os.path.exists("output.png"):
+      with open("output.png", "rb") as photo:
+        bot.send_photo(message.chat.id, photo, caption="മാച്ച് ചെയ്ത ചിത്രങ്ങൾ!")
+    else:
+      bot.reply_to(
+        message, "മാച്ച് ചെയ്യുന്ന കളറിലുള്ള ചിത്രങ്ങളൊന്നും കണ്ടെത്തിയില്ല."
+      )
+  else:
+    bot.reply_to(
+      message, "ഫോൾഡറിൽ ചിത്രങ്ങളൊന്നും ലഭ്യമല്ല അല്ലെങ്കിൽ പാത്ത് തെറ്റാണ്."
+    )
+
+
+# 4. ബോട്ട് ബാക്ക്ഗ്രൗണ്ടിൽ റൺ ചെയ്യാൻ ത്രെഡ് ഉപയോഗിക്കുന്നു
+def run_bot():
+  while True:
+    try:
+      bot.infinity_polling(timeout=60, long_polling_timeout=60)
+    except Exception as e:
+      print(f"Error: {e}")
+      time.sleep(5)
+
+
+Thread(target=run_bot).start()
+
+# ആപ്പ് ലൈവായി നിലനിർത്താൻ
 while True:
   time.sleep(1)
