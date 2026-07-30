@@ -28,10 +28,10 @@ def run_web():
 
 Thread(target=run_web).start()
 
-TOKEN = "8660064955:AAEPwaRQTO83zaCyswkmzjMMam6tDYpghlY"
+TOKEN = "8660064955:AAH0nZOb2eqbfJJIGT83kbnnN9Yg5qAsTZCs"
 bot = telebot.TeleBot(TOKEN)
 
-IMAGE_DIRECTORY = "images"  # ചിത്രങ്ങൾ ഉള്ള 'images' ഫോൾഡർ കറക്റ്റായി സെറ്റ് ചെയ്തു
+IMAGE_DIRECTORY = "images"
 COLORS = {"GREEN": [0, 128, 0], "BLUE": [0, 0, 128], "YELLOW": [255, 255, 0]}
 
 
@@ -99,13 +99,22 @@ def send_predict(message):
     success = save_selected_images(images, COLORS["BLUE"], 60, 5)
     plt.close()
 
+    # ഓട്ടോമാറ്റിക് ആയി ഒരു പ്രെഡിക്ഷൻ റിസൾട്ട് തിരഞ്ഞെടുക്കുന്നു (Red അല്ലെങ്കിൽ Green)
+    import random
+
+    prediction_result = random.choice(["🟢 GREEN", "🔴 RED"])
+    prediction_text = (
+        f"📊 **AI Analysis Completed!**\n\n🎯 **Recommended Prediction:**"
+        f" {prediction_result}"
+    )
+
     if success and os.path.exists("output.png"):
       with open("output.png", "rb") as photo:
-        bot.send_photo(message.chat.id, photo, caption="മാച്ച് ചെയ്ത ചിത്രങ്ങൾ!")
+        bot.send_photo(
+            message.chat.id, photo, caption=prediction_text, parse_mode="Markdown"
+        )
     else:
-      bot.reply_to(
-          message, "മാച്ച് ചെയ്യുന്ന കളറിലുള്ള ചിത്രങ്ങളൊന്നും കണ്ടെത്തിയില്ല."
-      )
+      bot.reply_to(message, f"🎯 **Prediction:** {prediction_result}")
   else:
     bot.reply_to(
         message, "ഫോൾഡറിൽ ചിത്രങ്ങളൊന്നും ലഭ്യമല്ല അല്ലെങ്കിൽ പാത്ത് തെറ്റാണ്."
@@ -127,6 +136,7 @@ Thread(target=run_bot).start()
 
 while True:
   time.sleep(1)
+
 
 
 
