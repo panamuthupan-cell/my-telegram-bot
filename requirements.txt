@@ -1,8 +1,7 @@
 pyTelegramBotAPI
-flask
-httpx
-opencv-python-headless
+Flask
+opencv-python
+scikit-image
 matplotlib
 numpy
 scikit-learn
-scikit-image
