@@ -32,7 +32,7 @@ Thread(target=run_web).start()
 
 # 2. ടെലിഗ്രാം ബോട്ട് സെറ്റപ്പ്
 # (നിങ്ങളുടെ ബോട്ട് ടോക്കൻ ഇവിടെ നൽകുക അല്ലെങ്കിൽ Render-ൽ Environment Variable ആയി നൽകുക)
-TOKEN = os.environ.get("BOT_TOKEN",8660064955:AAHOnZOb2eqbfJJIGT83kbnN9Yg5qAsTZCs)
+TOKEN = os.environ.get("BOT_TOKEN","8660064955:AAHOnZOb2eqbfJJIGT83kbnN9Yg5qAsTZCs")
 bot = telebot.TeleBot(TOKEN)
 
 IMAGE_DIRECTORY = "./images"  # ചിത്രങ്ങൾ ഉള്ള ഫോൾഡർ
